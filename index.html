@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101522">
+  <title>节奏一击 · 一键小游戏</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101522;
+      --panel: rgba(27, 35, 54, .88);
+      --text: #f3f6ff;
+      --muted: #a6b0c7;
+      --mint: #62f2c2;
+      --pink: #ff7298;
+      --line: rgba(255, 255, 255, .1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      overflow: hidden;
+      color: var(--text);
+      font-family: ui-rounded, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(91, 104, 210, .2), transparent 48%),
+        radial-gradient(circle at 12% 80%, rgba(98, 242, 194, .08), transparent 28%),
+        var(--bg);
+    }
+    .game {
+      width: min(100%, 440px);
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, .4);
+      text-align: center;
+      backdrop-filter: blur(16px);
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--mint);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: clamp(30px, 8vw, 40px); letter-spacing: -.04em; }
+    .subtitle { margin: 9px 0 24px; color: var(--muted); font-size: 14px; }
+    .scoreboard { display: flex; gap: 12px; margin-bottom: 28px; }
+    .stat {
+      flex: 1;
+      padding: 13px 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .035);
+    }
+    .stat-label { display: block; color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+    .stat-value { display: block; margin-top: 3px; font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .arena {
+      position: relative;
+      height: 150px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, .045), rgba(255, 255, 255, .012));
+    }
+    .beat-orb {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 72px; height: 72px;
+      transform: translate(-50%, -58%) scale(.82);
+      border: 2px solid rgba(98, 242, 194, .7);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(98, 242, 194, .32), rgba(98, 242, 194, .06) 68%);
+      box-shadow: 0 0 30px rgba(98, 242, 194, .12);
+      transition: transform .09s ease-out, box-shadow .09s ease-out, background .09s ease-out;
+    }
+    .beat-orb::before, .beat-orb::after {
+      content: "";
+      position: absolute;
+      inset: -12px;
+      border: 1px solid rgba(98, 242, 194, .28);
+      border-radius: 50%;
+    }
+    .beat-orb::after { inset: -24px; opacity: .55; }
+    .arena.beat .beat-orb {
+      transform: translate(-50%, -58%) scale(1.13);
+      background: radial-gradient(circle, rgba(98, 242, 194, .75), rgba(98, 242, 194, .12) 70%);
+      box-shadow: 0 0 45px rgba(98, 242, 194, .55);
+    }
+    .bpm-label {
+      position: absolute;
+      inset: 14px 0 auto;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+    .arena-result {
+      position: absolute;
+      inset: auto 0 13px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .arena-result.good { color: var(--mint); }
+    .arena-result.bad { color: var(--pink); }
+    .hit-button {
+      width: 100%;
+      min-height: 64px;
+      border: 0;
+      border-radius: 18px;
+      color: #09241d;
+      background: linear-gradient(135deg, #8affd5, #4cddb0);
+      box-shadow: 0 8px 25px rgba(69, 226, 177, .22), inset 0 1px 0 rgba(255,255,255,.7);
+      font: inherit;
+      font-size: 17px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .12s, filter .12s, box-shadow .12s;
+      touch-action: manipulation;
+    }
+    .hit-button:hover { filter: brightness(1.06); box-shadow: 0 10px 30px rgba(69, 226, 177, .3); }
+    .hit-button:active { transform: scale(.975); }
+    .hit-button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+    .hint { margin: 14px 0 0; color: var(--muted); font-size: 12px; }
+    .hint kbd { padding: 3px 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--text); font: inherit; }
+    .gameover .beat-orb { opacity: .35; }
+    @media (max-width: 420px) { .game { padding: 24px 20px; } .arena { height: 138px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="game" id="game">
+    <p class="eyebrow">ONE BUTTON · MINI GAME</p>
+    <h1>节奏一击</h1>
+    <p class="subtitle">听节拍，跟着音乐按下按钮！</p>
+
+    <section class="scoreboard" aria-label="游戏数据">
+      <div class="stat"><span class="stat-label">当前得分</span><span class="stat-value" id="score">0</span></div>
+      <div class="stat"><span class="stat-label">最高纪录</span><span class="stat-value" id="best">0</span></div>
+      <div class="stat"><span class="stat-label">剩余机会</span><span class="stat-value" id="lives">3</span></div>
+    </section>
+
+    <div class="arena" id="arena" aria-label="跟随节拍点击">
+      <div class="bpm-label" id="bpmLabel">节拍器 · 75 BPM</div>
+      <div class="beat-orb"></div>
+      <div class="arena-result" id="result" aria-live="polite">准备好了吗？</div>
+    </div>
+
+    <button class="hit-button" id="hitButton" type="button">开始游戏</button>
+    <p class="hint">听电子鼓点，在每次“咚”声时点击 · 也可按 <kbd>空格</kbd></p>
+  </main>
+
+  <script>
+    (() => {
+      const game = document.querySelector("#game");
+      const arena = document.querySelector("#arena");
+      const bpmLabel = document.querySelector("#bpmLabel");
+      const scoreLabel = document.querySelector("#score");
+      const bestLabel = document.querySelector("#best");
+      const livesLabel = document.querySelector("#lives");
+      const result = document.querySelector("#result");
+      const button = document.querySelector("#hitButton");
+      const bestKey = "one-button-timing-best";
+      let score = 0;
+      let lives = 3;
+      let running = false;
+      let beatInterval = 800;
+      let lastBeatAt = 0;
+      let beatTimer = 0;
+      let audioContext;
+      let beatCount = 0;
+      let attemptedBeat = -1;
+
+      try { bestLabel.textContent = localStorage.getItem(bestKey) || "0"; } catch { bestLabel.textContent = "0"; }
+
+      function playSound() {
+        if (!audioContext) return;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = beatCount % 4 === 0 ? 880 : 620;
+        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.14, audioContext.currentTime + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.085);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.09);
+      }
+
+      function playBeat() {
+        if (!running) return;
+        lastBeatAt = performance.now();
+        beatCount += 1;
+        playSound();
+        arena.classList.add("beat");
+        setTimeout(() => arena.classList.remove("beat"), 110);
+        beatTimer = window.setTimeout(playBeat, beatInterval);
+      }
+
+      async function startGame() {
+        score = 0;
+        lives = 3;
+        beatInterval = 800;
+        beatCount = 0;
+        attemptedBeat = -1;
+        lastBeatAt = 0;
+        running = true;
+        game.classList.remove("gameover");
+        scoreLabel.textContent = score;
+        livesLabel.textContent = lives;
+        bpmLabel.textContent = "节拍器 · 75 BPM";
+        result.textContent = "听节拍，准备……";
+        result.className = "arena-result";
+        button.textContent = "跟着节拍点！";
+        button.disabled = true;
+        if (!audioContext) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioContext = new AudioContextClass();
+        }
+        if (audioContext?.state === "suspended") await audioContext.resume();
+        if (!running) return;
+        button.disabled = false;
+        result.textContent = "跟上每一拍！";
+        playBeat();
+      }
+
+      function finishGame() {
+        running = false;
+        clearTimeout(beatTimer);
+        arena.classList.remove("beat");
+        game.classList.add("gameover");
+        button.disabled = false;
+        button.textContent = "再玩一次";
+        result.textContent = `游戏结束 · 得分 ${score}`;
+        result.className = "arena-result bad";
+      }
+
+      function hit() {
+        if (!running) { startGame(); return; }
+        if (!lastBeatAt) return;
+        const phase = (performance.now() - lastBeatAt) % beatInterval;
+        const distance = Math.min(phase, beatInterval - phase);
+        const targetBeat = beatCount + (phase > beatInterval / 2 ? 1 : 0);
+        if (targetBeat === attemptedBeat) return;
+        attemptedBeat = targetBeat;
+        const tolerance = Math.max(95, 170 - score * 2);
+        if (distance <= tolerance) {
+          score += 1;
+          if (score % 4 === 0) beatInterval = Math.max(480, beatInterval - 40);
+          bpmLabel.textContent = `节拍器 · ${Math.round(60000 / beatInterval)} BPM`;
+          scoreLabel.textContent = score;
+          result.textContent = "踩准了！ +1";
+          result.className = "arena-result good";
+          if (score > Number(bestLabel.textContent)) {
+            bestLabel.textContent = score;
+            try { localStorage.setItem(bestKey, String(score)); } catch { /* 存储不可用时仍可正常游戏 */ }
+          }
+        } else {
+          lives -= 1;
+          livesLabel.textContent = lives;
+          result.textContent = "没踩上节拍，再听下一拍";
+          result.className = "arena-result bad";
+          if (lives <= 0) finishGame();
+        }
+      }
+
+      button.addEventListener("click", hit);
+      document.addEventListener("keydown", (event) => {
+        if (event.code === "Space" && !event.repeat) {
+          event.preventDefault();
+          hit();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
